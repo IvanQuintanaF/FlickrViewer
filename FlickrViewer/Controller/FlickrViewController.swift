@@ -10,6 +10,12 @@ import UIKit
 
 class FlickrViewController: UICollectionViewController {
     
+    let imageDetailView: ImageDetailView = {
+        let idv = ImageDetailView()
+        idv.translatesAutoresizingMaskIntoConstraints = false
+        return idv
+    }()
+    
     var searchBufferText = String()
     
     var photos: [Photo] = [] {
@@ -31,6 +37,7 @@ class FlickrViewController: UICollectionViewController {
         setupNavigationItems()
         setupCollectionView()
         getPhotos(for: "mexico")
+        setupViews()
     }
     
     func getURLString(for tag: String) -> String {
@@ -66,17 +73,16 @@ class FlickrViewController: UICollectionViewController {
         }.resume()
         
     }
-
     
-    @objc func imageLongPress(sender: UILongPressGestureRecognizer) {
-       
-        if sender.state == .began {
-            print("begin")
-        } else if sender.state == .ended {
-            print("end")
-        }
+    func setupViews() {
+        guard let view = navigationController?.view else {return}
+        view.addSubview(imageDetailView)
+        imageDetailView.centerYAnchor.constraint(equalTo: view.centerYAnchor).isActive = true
+        imageDetailView.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
+        imageDetailView.widthAnchor.constraint(equalTo: view.widthAnchor).isActive = true
+        imageDetailView.heightAnchor.constraint(equalTo: view.heightAnchor).isActive = true
+        imageDetailView.isHidden = true
     }
-
 }
 
 extension FlickrViewController: UICollectionViewDelegateFlowLayout {
@@ -92,7 +98,6 @@ extension FlickrViewController: UICollectionViewDelegateFlowLayout {
         guard indexPath.item < photos.count else {return  UICollectionViewCell()}
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: cellID, for: indexPath) as! ImageCell
         cell.photo = photos[indexPath.item]
-        cell.addGestureRecognizer(UILongPressGestureRecognizer(target: self, action: #selector(imageLongPress(sender:))))
         return cell
     }
     
@@ -113,7 +118,12 @@ extension FlickrViewController: UICollectionViewDelegateFlowLayout {
         return 0
     }
     
-    
+    override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        if let cell = collectionView.cellForItem(at: indexPath) as? ImageCell {
+            imageDetailView.imageView.image = cell.imageView.image
+            imageDetailView.isHidden = false
+        }
+    }
     
 }
 

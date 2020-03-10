@@ -10,6 +10,8 @@ import UIKit
 
 class FlickrViewController: UICollectionViewController {
     
+    var searchBufferText = String()
+    
     var photos: [Photo] = [] {
         didSet {
             DispatchQueue.main.async {
@@ -28,18 +30,19 @@ class FlickrViewController: UICollectionViewController {
         
         setupNavigationItems()
         setupCollectionView()
-        getPhotos()
+        getPhotos(for: "mexico")
     }
     
     func getURLString(for tag: String) -> String {
-        return "https://www.flickr.com/services/rest/?method=flickr.photos.search&api_key=eb711db029b845ec8235a5c7ca6b3aba&tags=\(tag)&format=json&nojsoncallback=1"
+        let formatedTag = tag.replacingOccurrences(of: " ", with: "%20")
+        return "https://www.flickr.com/services/rest/?method=flickr.photos.search&api_key=eb711db029b845ec8235a5c7ca6b3aba&tags=\(formatedTag)&format=json&nojsoncallback=1"
     }
     
     func setupNavigationItems() {
         navigationController?.navigationBar.prefersLargeTitles = true
         navigationItem.title = "Flickr Viewer"
         navigationItem.searchController = searchController
-        searchController.delegate = self
+        searchController.searchBar.delegate = self
         navigationItem.hidesSearchBarWhenScrolling = false
     }
     
@@ -47,8 +50,8 @@ class FlickrViewController: UICollectionViewController {
         collectionView.register(ImageCell.self, forCellWithReuseIdentifier: cellID)
     }
     
-    func getPhotos() {
-        let urlString = getURLString(for: "mexico")
+    func getPhotos(for tag: String) {
+        let urlString = getURLString(for: tag)
         let url = URL(string: urlString)
         URLSession.shared.dataTask(with: url!) { (data, response, error) in
             if let error = error {
@@ -64,6 +67,15 @@ class FlickrViewController: UICollectionViewController {
         
     }
 
+    
+    @objc func imageLongPress(sender: UILongPressGestureRecognizer) {
+       
+        if sender.state == .began {
+            print("begin")
+        } else if sender.state == .ended {
+            print("end")
+        }
+    }
 
 }
 
@@ -77,8 +89,10 @@ extension FlickrViewController: UICollectionViewDelegateFlowLayout {
     }
     
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        guard indexPath.item < photos.count else {return  UICollectionViewCell()}
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: cellID, for: indexPath) as! ImageCell
         cell.photo = photos[indexPath.item]
+        cell.addGestureRecognizer(UILongPressGestureRecognizer(target: self, action: #selector(imageLongPress(sender:))))
         return cell
     }
     
@@ -98,11 +112,21 @@ extension FlickrViewController: UICollectionViewDelegateFlowLayout {
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumInteritemSpacingForSectionAt section: Int) -> CGFloat {
         return 0
     }
+    
+    
+    
 }
 
 
-extension FlickrViewController: UISearchControllerDelegate {
+extension FlickrViewController: UISearchBarDelegate {
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        searchBufferText = searchText
+    }
     
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        getPhotos(for: searchBufferText)
+        searchController.isActive = false
+    }
 }
 
 
